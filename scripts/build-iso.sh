@@ -19,8 +19,8 @@ done
 mkdir -p "${BUILD_DIR}"
 cd "${ROOT_DIR}"
 
-# GitHub's contents API cannot preserve executable bits, so mark the hook executable here.
-chmod 0755 config/hooks/normal/010-install-brave.hook.chroot
+# GitHub's contents API cannot preserve executable bits, so mark hooks executable here.
+find config/hooks/normal -maxdepth 1 -type f -name '*.hook.chroot' -exec chmod 0755 {} +
 
 lb config \
   --mode debian \
@@ -29,6 +29,7 @@ lb config \
   --architectures amd64 \
   --binary-images iso-hybrid \
   --debian-installer live \
+  --security false \
   --archive-areas "main contrib non-free non-free-firmware" \
   --mirror-bootstrap https://deb.debian.org/debian \
   --mirror-chroot https://deb.debian.org/debian \
