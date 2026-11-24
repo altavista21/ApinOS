@@ -1,0 +1,19 @@
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: sunday
+      time: "04:00"
+      timezone: "Etc/UTC"
+    open-pull-requests-limit: 5
+
+  - package-ecosystem: cargo
+    directory: /apps/apinos-info
+    schedule:
+      interval: weekly
+      day: sunday
+      time: "04:15"
+      timezone: "Etc/UTC"
+    open-pull-requests-limit: 5
