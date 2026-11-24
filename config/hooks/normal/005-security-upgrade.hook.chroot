@@ -1,0 +1,12 @@
+#!/bin/sh
+set -eu
+
+# Debian 13 uses the trixie-security suite, not the obsolete trixie/updates path.
+cat > /etc/apt/sources.list.d/apinos-security.list <<'EOF'
+deb https://security.debian.org/debian-security trixie-security main contrib non-free non-free-firmware
+EOF
+
+apt-get update
+DEBIAN_FRONTEND=noninteractive apt-get upgrade -y --with-new-pkgs
+apt-get clean
+rm -rf /var/lib/apt/lists/*
