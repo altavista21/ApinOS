@@ -19,6 +19,20 @@ done
 mkdir -p "${BUILD_DIR}"
 cd "${ROOT_DIR}"
 
+# Ubuntu's live-build syslinux helper expects these bootloader assets under
+# /root/isolinux, while Ubuntu packages them in separate system directories.
+ISOLINUX_BIN="$(dpkg -L isolinux | awk '/\/isolinux\.bin$/ { print; exit }')"
+VESAMENU_C32="$(dpkg -L syslinux-common | awk '/\/vesamenu\.c32$/ { print; exit }')"
+if [[ -z "${ISOLINUX_BIN}" || ! -s "${ISOLINUX_BIN}" ||
+      -z "${VESAMENU_C32}" || ! -s "${VESAMENU_C32}" ]]; then
+  echo "Required ISOLINUX boot files were not found in installed packages." >&2
+  dpkg -L isolinux syslinux-common | grep -E 'isolinux\.bin|vesamenu\.c32' || true
+  exit 1
+fi
+install -d -m 0755 /root/isolinux
+install -m 0644 "${ISOLINUX_BIN}" /root/isolinux/isolinux.bin
+install -m 0644 "${VESAMENU_C32}" /root/isolinux/vesamenu.c32
+
 # GitHub's contents API cannot preserve executable bits, so mark hooks executable here.
 find config/hooks/normal -maxdepth 1 -type f -name '*.hook.chroot' -exec chmod 0755 {} +
 
