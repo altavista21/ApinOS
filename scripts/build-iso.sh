@@ -49,7 +49,7 @@ lb config \
   --initsystem systemd \
   --architectures amd64 \
   --binary-images iso-hybrid \
-  --debian-installer live \
+  --debian-installer false \
   --security false \
   --archive-areas "main contrib non-free non-free-firmware" \
   --mirror-bootstrap https://deb.debian.org/debian \
