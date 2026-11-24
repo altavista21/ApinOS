@@ -24,20 +24,21 @@ find config/hooks/normal -maxdepth 1 -type f -name '*.hook.chroot' -exec chmod 0
 
 # Ubuntu's packaged live-build may request Debian Contents indexes from the
 # suite root. Debian publishes these indexes under each component (main/).
-KERNEL_HELPER=/usr/lib/live/build/lb_chroot_linux-image
-if [[ ! -f "${KERNEL_HELPER}" ]]; then
-  echo "Missing live-build kernel helper: ${KERNEL_HELPER}" >&2
-  exit 1
-fi
+# Patch every live-build helper that constructs a suite-level Contents URL,
+# including the binary Debian Installer helper.
+for helper in /usr/lib/live/build/lb_*; do
+  [[ -f "${helper}" ]] || continue
+  sed -i \
+    -e 's|/dists/${LB_PARENT_DISTRIBUTION}/Contents-|/dists/${LB_PARENT_DISTRIBUTION}/main/Contents-|g' \
+    -e 's|/dists/${LB_DISTRIBUTION}/Contents-|/dists/${LB_DISTRIBUTION}/main/Contents-|g' \
+    -e 's|/dists/${LB_DEBIAN_INSTALLER_DISTRIBUTION}/Contents-|/dists/${LB_DEBIAN_INSTALLER_DISTRIBUTION}/main/Contents-|g' \
+    "${helper}"
+done
 
-sed -i \
-  -e 's|/dists/${LB_PARENT_DISTRIBUTION}/Contents-|/dists/${LB_PARENT_DISTRIBUTION}/main/Contents-|g' \
-  -e 's|/dists/${LB_DISTRIBUTION}/Contents-|/dists/${LB_DISTRIBUTION}/main/Contents-|g' \
-  "${KERNEL_HELPER}"
-
-if grep -Fq '/dists/${LB_PARENT_DISTRIBUTION}/Contents-' "${KERNEL_HELPER}" ||
-   grep -Fq '/dists/${LB_DISTRIBUTION}/Contents-' "${KERNEL_HELPER}"; then
-  echo "Could not correct the live-build kernel Contents index path." >&2
+if grep -R -Fq '/dists/${LB_PARENT_DISTRIBUTION}/Contents-' /usr/lib/live/build/lb_* ||
+   grep -R -Fq '/dists/${LB_DISTRIBUTION}/Contents-' /usr/lib/live/build/lb_* ||
+   grep -R -Fq '/dists/${LB_DEBIAN_INSTALLER_DISTRIBUTION}/Contents-' /usr/lib/live/build/lb_*; then
+  echo "Could not correct all live-build Contents index paths." >&2
   exit 1
 fi
 
