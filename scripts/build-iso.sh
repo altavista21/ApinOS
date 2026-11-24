@@ -23,12 +23,17 @@ cd "${ROOT_DIR}"
 chmod 0755 config/hooks/normal/010-install-brave.hook.chroot
 
 lb config \
+  --mode debian \
+  --ignore-system-defaults \
   --distribution trixie \
   --architectures amd64 \
   --binary-images iso-hybrid \
   --debian-installer live \
   --archive-areas "main contrib non-free non-free-firmware" \
-  --bootappend-live "boot=live components nocomponents=lightdm,sudo quiet splash username=apin" \
+  --mirror-bootstrap https://deb.debian.org/debian \
+  --mirror-chroot https://deb.debian.org/debian \
+  --mirror-binary https://deb.debian.org/debian \
+  --bootappend-live "boot=live components nocomponents=lightdm,sudo quiet splash console=tty0 console=ttyS0,115200 systemd.log_target=console systemd.show_status=1 username=apin" \
   --iso-application "ApinOS" \
   --iso-volume "APINOS"
 
