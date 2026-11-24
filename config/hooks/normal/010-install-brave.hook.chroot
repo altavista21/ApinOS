@@ -6,6 +6,14 @@ install -d -m 0755 /usr/share/keyrings
 curl -fsSLo "$KEYRING" https://brave-browser-apt-release.s3.brave.com/brave-browser-archive-keyring.gpg
 chmod 0644 "$KEYRING"
 
+# Fail closed if the downloaded key is not Brave's independently published release key.
+EXPECTED_FINGERPRINT=DBF1A116C220B8C7164F98230686B78420038257
+ACTUAL_FINGERPRINT="$(gpg --batch --show-keys --with-colons "$KEYRING" | awk -F: '$1 == "fpr" { print $10; exit }')"
+if [ "$ACTUAL_FINGERPRINT" != "$EXPECTED_FINGERPRINT" ]; then
+  echo "Brave signing-key fingerprint mismatch; refusing to trust this key." >&2
+  exit 1
+fi
+
 printf '%s\n' \
   'deb [signed-by=/usr/share/keyrings/brave-browser-archive-keyring.gpg] https://brave-browser-apt-release.s3.brave.com/ stable main' \
   > /etc/apt/sources.list.d/brave-browser-release.list
