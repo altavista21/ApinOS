@@ -22,6 +22,25 @@ cd "${ROOT_DIR}"
 # GitHub's contents API cannot preserve executable bits, so mark hooks executable here.
 find config/hooks/normal -maxdepth 1 -type f -name '*.hook.chroot' -exec chmod 0755 {} +
 
+# Ubuntu's packaged live-build may request Debian Contents indexes from the
+# suite root. Debian publishes these indexes under each component (main/).
+KERNEL_HELPER=/usr/lib/live/build/lb_chroot_linux-image
+if [[ ! -f "${KERNEL_HELPER}" ]]; then
+  echo "Missing live-build kernel helper: ${KERNEL_HELPER}" >&2
+  exit 1
+fi
+
+sed -i \
+  -e 's|/dists/${LB_PARENT_DISTRIBUTION}/Contents-|/dists/${LB_PARENT_DISTRIBUTION}/main/Contents-|g' \
+  -e 's|/dists/${LB_DISTRIBUTION}/Contents-|/dists/${LB_DISTRIBUTION}/main/Contents-|g' \
+  "${KERNEL_HELPER}"
+
+if grep -Fq '/dists/${LB_PARENT_DISTRIBUTION}/Contents-' "${KERNEL_HELPER}" ||
+   grep -Fq '/dists/${LB_DISTRIBUTION}/Contents-' "${KERNEL_HELPER}"; then
+  echo "Could not correct the live-build kernel Contents index path." >&2
+  exit 1
+fi
+
 lb config \
   --mode debian \
   --ignore-system-defaults \
