@@ -45,6 +45,7 @@ lb config \
   --mode debian \
   --ignore-system-defaults \
   --distribution trixie \
+  --initsystem systemd \
   --architectures amd64 \
   --binary-images iso-hybrid \
   --debian-installer live \
