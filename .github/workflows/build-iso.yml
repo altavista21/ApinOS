@@ -21,20 +21,27 @@ jobs:
   build:
     name: Build Debian 13 XFCE ISO
     runs-on: ubuntu-24.04
+    container:
+      image: debian:trixie
     timeout-minutes: 360
     steps:
+      - name: Install checkout prerequisites
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends git ca-certificates
+
       - name: Checkout source
         uses: actions/checkout@v4
 
       - name: Install live-build dependencies
         run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends \
-            live-build debootstrap xorriso squashfs-tools
+          apt-get update
+          apt-get install -y --no-install-recommends \
+            live-build debootstrap debian-archive-keyring xorriso squashfs-tools
 
       - name: Build ApinOS ISO
         shell: bash
-        run: sudo bash ./scripts/build-iso.sh
+        run: bash ./scripts/build-iso.sh
 
       - name: Verify ISO output
         id: iso
