@@ -38,6 +38,39 @@ install -m 0644 "${VESAMENU_C32}" "${ISOLINUX_STAGE}/vesamenu.c32"
 # GitHub's contents API cannot preserve executable bits, so mark hooks executable here.
 find config/hooks/normal -maxdepth 1 -type f -name '*.hook.chroot' -exec chmod 0755 {} +
 
+lb config \
+  --mode debian \
+  --ignore-system-defaults \
+  --distribution trixie \
+  --initsystem systemd \
+  --architectures amd64 \
+  --binary-images iso-hybrid \
+  --debian-installer false \
+  --security false \
+  --archive-areas "main contrib non-free non-free-firmware" \
+  --mirror-bootstrap https://deb.debian.org/debian \
+  --mirror-chroot https://deb.debian.org/debian \
+  --mirror-binary https://deb.debian.org/debian \
+  --bootappend-live "boot=live components nocomponents=lightdm,sudo quiet splash console=tty0 console=ttyS0,115200 systemd.log_target=console systemd.show_status=1 username=apin" \
+  --iso-application "ApinOS" \
+  --iso-volume "APINOS"
+
+lb build
+
+shopt -s nullglob
+images=("${ROOT_DIR}"/*.iso)
+if (( ${#images[@]} == 0 )); then
+  echo "Build finished but no ISO was found in ${ROOT_DIR}. Check live-build output." >&2
+  exit 1
+fi
+
+for image in "${images[@]}"; do
+  mv -- "${image}" "${BUILD_DIR}/apinos-amd64.iso"
+done
+
+echo "ApinOS ISO output: ${BUILD_DIR}/"# GitHub's contents API cannot preserve executable bits, so mark hooks executable here.
+find config/hooks/normal -maxdepth 1 -type f -name '*.hook.chroot' -exec chmod 0755 {} +
+
 # Ubuntu's packaged live-build may request Debian Contents indexes from the
 # suite root. Debian publishes these indexes under each component (main/).
 # Patch every live-build helper that constructs a suite-level Contents URL,
