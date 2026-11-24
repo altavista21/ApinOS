@@ -58,15 +58,13 @@ Double-check the selected drive before writing. Choosing the wrong drive can era
 
 You may need to change the firmware boot order. Secure Boot compatibility has not yet been confirmed, so a test machine may require Secure Boot to be disabled. Change firmware security settings only if you understand the implications.
 
-### 4. Try the live environment or install ApinOS
+### 4. Try the ApinOS live preview
 
-If the ISO provides a live desktop option, start it first to check whether the display, keyboard, touchpad, storage, and network work correctly.
+The first preview ISO is intended to boot into a temporary XFCE live desktop. It is for evaluation only and does not include an operating-system installer.
 
-If the ISO provides a Debian installer option, follow the installer's instructions. Review the disk and partition selections carefully before confirming any changes. Installing an operating system can erase existing data.
+Use the live session to check display output, keyboard, touchpad, storage detection, networking, Brave Browser, and the XFCE Terminal. Files saved during the session may be lost after shutdown.
 
-After installation, remove the USB drive and restart the computer.
-
-**Important:** The installer flow, partitioning behavior, bootloader setup, and post-install login have not been confirmed until a release ISO completes end-to-end installation testing. Treat these steps as a guide to the intended process, not as a claim that installation is already verified.
+**Installation is not available in this preview.** A separate installer (such as Calamares) must be integrated and tested before ApinOS can be installed to a computer. Do not use this preview as an installer or attempt to repartition a computer with it.
 
 ## Using ApinOS
 
