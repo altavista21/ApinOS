@@ -30,8 +30,7 @@ lb config \
   --archive-areas "main contrib non-free non-free-firmware" \
   --bootappend-live "boot=live components quiet splash username=apin" \
   --iso-application "ApinOS" \
-  --iso-volume "APINOS" \
-  --image-name "apinos-amd64"
+  --iso-volume "APINOS"
 
 lb build
 
@@ -43,7 +42,7 @@ if (( ${#images[@]} == 0 )); then
 fi
 
 for image in "${images[@]}"; do
-  mv -- "${image}" "${BUILD_DIR}/"
+  mv -- "${image}" "${BUILD_DIR}/apinos-amd64.iso"
 done
 
 echo "ApinOS ISO output: ${BUILD_DIR}/"
