@@ -19,6 +19,9 @@ done
 mkdir -p "${BUILD_DIR}"
 cd "${ROOT_DIR}"
 
+# GitHub's contents API cannot preserve executable bits, so mark the hook executable here.
+chmod 0755 config/hooks/normal/010-install-brave.hook.chroot
+
 lb config \
   --distribution trixie \
   --architectures amd64 \
