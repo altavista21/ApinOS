@@ -13,6 +13,7 @@ dbus-x11
 network-manager
 network-manager-gnome
 sudo
+live-config-systemd
 
 # Command-line utilities
 git
