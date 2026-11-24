@@ -1,23 +1,25 @@
-# Desktop session
+# ApinOS desktop: XFCE GUI, terminal, and Brave browser
 xfce4
-xfce4-goodies
+xfce4-terminal
+xfce4-session
+xfce4-panel
+xfce4-settings
+xfdesktop4
+thunar
 lightdm
 lightdm-gtk-greeter
+xorg
+dbus-x11
 network-manager
 network-manager-gnome
+sudo
 
-# Core desktop utilities
-firefox-esr
-thunar-archive-plugin
-file-roller
-mousepad
-xfce4-terminal
-
-# Firmware and hardware support
+# Firmware support
 firmware-linux
 firmware-linux-free
 firmware-linux-nonfree
 
-# ApinOS development utility runtime
-rustc
-cargo
+# Required tools for adding Brave's official APT repository
+ca-certificates
+curl
+gnupg
