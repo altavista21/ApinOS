@@ -36,13 +36,14 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
             live-build debootstrap debian-archive-keyring xorriso squashfs-tools \
+            isolinux syslinux-common \
             clamav clamav-freshclam
 
       - name: Prepare security report directory
         run: mkdir -p build
 
       - name: Scan source dependencies and configuration
-        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.76.2
         with:
           version: v0.76.2
           scan-type: fs
@@ -88,7 +89,7 @@ jobs:
             --log=build/clamav-scan.log build/rootfs
 
       - name: Scan Debian packages in the built root filesystem
-        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.76.2
         with:
           version: v0.76.2
           scan-type: rootfs
