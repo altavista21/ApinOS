@@ -9,7 +9,6 @@ on:
       - "apps/**"
       - ".github/workflows/build-iso.yml"
   schedule:
-    # Weekly security refresh and ISO rebuild, Sunday 03:17 UTC.
     - cron: "17 3 * * 0"
   workflow_dispatch:
 
@@ -24,6 +23,8 @@ jobs:
   build:
     name: Build and scan Debian 13 XFCE ISO
     runs-on: ubuntu-24.04
+    container:
+      image: debian:trixie
     permissions:
       contents: read
     timeout-minutes: 360
@@ -31,13 +32,14 @@ jobs:
       - name: Checkout source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - name: Install live-build and security scan dependencies
+      - name: Install Debian live-build and security scan dependencies
+        shell: bash
         run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends \
+          apt-get update
+          DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
             live-build debootstrap debian-archive-keyring xorriso squashfs-tools \
-            isolinux syslinux-common \
-            clamav clamav-freshclam
+            isolinux syslinux-common clamav clamav-freshclam ca-certificates \
+            curl git gnupg
 
       - name: Prepare security report directory
         run: mkdir -p build
@@ -55,9 +57,9 @@ jobs:
           output: build/trivy-source.json
           exit-code: "1"
 
-      - name: Build ApinOS ISO on the host runner
+      - name: Build ApinOS ISO with Debian live-build
         shell: bash
-        run: sudo bash ./scripts/build-iso.sh
+        run: bash ./scripts/build-iso.sh
 
       - name: Verify ISO and extract live root filesystem
         shell: bash
@@ -66,7 +68,7 @@ jobs:
           test -s build/apinos-amd64.iso
           sha256sum build/apinos-amd64.iso | tee build/SHA256SUMS
           test -s binary/live/filesystem.squashfs
-          sudo unsquashfs -d build/rootfs binary/live/filesystem.squashfs
+          unsquashfs -d build/rootfs binary/live/filesystem.squashfs
 
       - name: Publish preview ISO artifact immediately after build
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
@@ -79,14 +81,11 @@ jobs:
           retention-days: 30
 
       - name: Update ClamAV signatures
-        run: sudo freshclam --stdout --verbose
+        run: freshclam --stdout --verbose
 
       - name: Scan unpacked live filesystem for malware
         shell: bash
-        run: |
-          set -euo pipefail
-          sudo clamscan --recursive --infected \
-            --log=build/clamav-scan.log build/rootfs
+        run: clamscan --recursive --infected --log=build/clamav-scan.log build/rootfs
 
       - name: Scan Debian packages in the built root filesystem
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.76.2
@@ -168,9 +167,8 @@ jobs:
               echo "QEMU boot reached the graphical target / LightDM startup."
               exit 0
             fi
-
             if ! kill -0 "$qemu_pid" 2>/dev/null; then
-              echo "QEMU exited before the graphical login service was detected." >&2
+              echo "QEMU exited before graphical login service was detected." >&2
               cat "$serial_log" 2>/dev/null || true
               exit 1
             fi
