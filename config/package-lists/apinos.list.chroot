@@ -14,6 +14,12 @@ network-manager
 network-manager-gnome
 sudo
 
+# Command-line utilities
+git
+curl
+btop
+neowofetch
+
 # Firmware support
 firmware-linux
 firmware-linux-free
@@ -21,5 +27,4 @@ firmware-linux-nonfree
 
 # Required tools for adding Brave's official APT repository
 ca-certificates
-curl
 gnupg
