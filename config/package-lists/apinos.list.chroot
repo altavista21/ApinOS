@@ -1,0 +1,23 @@
+# Desktop session
+xfce4
+xfce4-goodies
+lightdm
+lightdm-gtk-greeter
+network-manager
+network-manager-gnome
+
+# Core desktop utilities
+firefox-esr
+thunar-archive-plugin
+file-roller
+mousepad
+xfce4-terminal
+
+# Firmware and hardware support
+firmware-linux
+firmware-linux-free
+firmware-linux-nonfree
+
+# ApinOS development utility runtime
+rustc
+cargo
