@@ -1,0 +1,73 @@
+name: Build ApinOS ISO
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "config/**"
+      - "scripts/**"
+      - "apps/**"
+      - ".github/workflows/build-iso.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: apinos-iso-build
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build Debian 13 XFCE ISO
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Install live-build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            live-build debootstrap xorriso squashfs-tools
+
+      - name: Build ApinOS ISO
+        run: sudo ./scripts/build-iso.sh
+
+      - name: Verify ISO output
+        id: iso
+        shell: bash
+        run: |
+          set -euo pipefail
+          mapfile -t images < <(find build -maxdepth 1 -type f -name '*.iso' -print)
+          if [[ "${#images[@]}" -ne 1 ]]; then
+            echo "Expected exactly one ISO, found ${#images[@]}" >&2
+            exit 1
+          fi
+          image="${images[0]}"
+          test -s "$image"
+          sha256sum "$image" | tee build/SHA256SUMS
+          echo "iso_path=$image" >> "$GITHUB_OUTPUT"
+          echo "iso_name=$(basename "$image")" >> "$GITHUB_OUTPUT"
+
+      - name: Upload ISO build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: apinos-iso-${{ github.run_number }}
+          path: |
+            ${{ steps.iso.outputs.iso_path }}
+            build/SHA256SUMS
+          if-no-files-found: error
+          retention-days: 90
+
+      - name: Publish ISO to GitHub prerelease
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: apinos-build-${{ github.run_number }}
+          name: ApinOS ISO Build ${{ github.run_number }}
+          prerelease: true
+          generate_release_notes: true
+          files: |
+            ${{ steps.iso.outputs.iso_path }}
+            build/SHA256SUMS
