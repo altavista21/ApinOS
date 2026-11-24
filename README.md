@@ -11,7 +11,7 @@ Early development. The repository contains a Debian Live Build configuration, an
 - Debian 13 (Trixie), x86_64
 - XFCE graphical desktop
 - Brave Browser and XFCE Terminal as the primary user applications
-- LightDM autologin for the live session user `apin`
+- LightDM login screen for the live session user `apin` (no automatic login)
 - Debian-provided Linux kernel and hardware support
 - Rust for ApinOS-authored system utilities
 
@@ -27,7 +27,7 @@ sudo apt install -y live-build debootstrap xorriso squashfs-tools
 sudo ./scripts/build-iso.sh
 ```
 
-The script configures and builds a hybrid live ISO. Brave is installed from its official APT repository during the chroot hook. The resulting ISO is expected under `build/` after a successful build. This configuration has not yet been validated by an actual ISO build.
+The script configures and builds a hybrid live ISO. The live session uses the username `apin` and Debian Live's default password `live`; change it immediately with `passwd` after logging in. Automatic LightDM login and the live-config sudo privilege setup are disabled. This is a live-session baseline, not a substitute for protecting a computer against someone with physical access or the ability to boot external media. Brave is installed from its official APT repository during the chroot hook. The resulting ISO is expected under `build/` after a successful build. This configuration has not yet been validated by an actual ISO build.
 
 ## Build the Rust utility
 
