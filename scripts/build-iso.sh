@@ -28,7 +28,7 @@ lb config \
   --binary-images iso-hybrid \
   --debian-installer live \
   --archive-areas "main contrib non-free non-free-firmware" \
-  --bootappend-live "boot=live components quiet splash username=apin" \
+  --bootappend-live "boot=live components nocomponents=lightdm,sudo quiet splash username=apin" \
   --iso-application "ApinOS" \
   --iso-volume "APINOS"
 
