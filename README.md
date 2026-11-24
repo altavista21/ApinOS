@@ -29,6 +29,15 @@ sudo ./scripts/build-iso.sh
 
 The script configures and builds a hybrid live ISO. The live session uses the username `apin` and Debian Live's default password `live`; change it immediately with `passwd` after logging in. Automatic LightDM login and the live-config sudo privilege setup are disabled. This is a live-session baseline, not a substitute for protecting a computer against someone with physical access or the ability to boot external media. Brave is installed from its official APT repository during the chroot hook. The resulting ISO is expected under `build/` after a successful build. This configuration has not yet been validated by an actual ISO build.
 
+## Security and validation
+
+- The live ISO build runs directly on the GitHub-hosted Ubuntu VM, not inside a restricted job container. The build explicitly selects Debian mode and Debian Trixie mirrors.
+- A weekly scheduled build refreshes Debian package metadata and rebuilds the ISO every Sunday at 03:17 UTC. Manual rebuilds are also available through GitHub Actions.
+- Trivy scans the repository for vulnerable dependencies, misconfiguration, and exposed secrets, then scans the assembled Debian root filesystem for HIGH and CRITICAL vulnerabilities.
+- ClamAV updates its official signatures and scans the unpacked live root filesystem before an ISO artifact can be published.
+- A separate QEMU job boots the ISO and checks for the systemd graphical target or LightDM startup. A release is published only after that check succeeds.
+- Security scans and the virtual boot test are automated gates, not a certification. Hardware compatibility, Secure Boot, installer behavior, network configuration, and manual desktop interaction still require separate testing.
+
 ## Build the Rust utility
 
 Install Rust/Cargo, then run:
