@@ -24,7 +24,7 @@ jobs:
     permissions:
       contents: read
     container:
-      image: debian:trixie
+      image: debian@sha256:bfc36aecdece0387418759dba474aa856c026ca8087da3606b41b90ab0509c99 # Debian Trixie amd64
     timeout-minutes: 360
     steps:
       - name: Install checkout prerequisites
