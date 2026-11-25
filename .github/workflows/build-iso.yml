@@ -57,8 +57,10 @@ jobs:
         run: |
           set -euo pipefail
           docker pull debian:trixie
+          mkdir -p "$RUNNER_TEMP/apinos-apt-cache"
           docker run --rm --privileged \
             -v "$GITHUB_WORKSPACE:/work" \
+            -v "$RUNNER_TEMP/apinos-apt-cache:/var/cache/apt/archives" \
             -w /work \
             debian:trixie bash -lc '
               set -euo pipefail
@@ -68,6 +70,15 @@ jobs:
                 isolinux syslinux-common ca-certificates curl git gnupg
               bash ./scripts/build-iso.sh
             '
+
+      - name: Upload live-build diagnostic log
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: apinos-build-log-${{ github.run_number }}
+          path: build/live-build.log
+          if-no-files-found: ignore
+          retention-days: 30
 
       - name: Verify ISO and extract live root filesystem
         shell: bash
