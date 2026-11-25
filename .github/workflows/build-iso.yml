@@ -11,6 +11,17 @@ on:
   schedule:
     - cron: "17 3 * * 0"
   workflow_dispatch:
+    inputs:
+      publish_release:
+        description: "Publish the built ISO as a GitHub Release"
+        required: true
+        type: boolean
+        default: true
+      release_tag:
+        description: "Release tag (for example v1.0.0)"
+        required: true
+        type: string
+        default: "v1.0.0"
 
 permissions:
   contents: read
@@ -24,7 +35,7 @@ jobs:
     name: Build ApinOS Debian 13 XFCE ISO
     runs-on: ubuntu-24.04
     permissions:
-      contents: read
+      contents: write
     timeout-minutes: 360
     steps:
       - name: Checkout source
@@ -58,6 +69,19 @@ jobs:
           path: build/apinos-amd64.iso
           if-no-files-found: error
           retention-days: 90
+
+      - name: Publish GitHub Release
+        if: github.event_name == 'workflow_dispatch' && inputs.publish_release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ inputs.release_tag }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh release create "$RELEASE_TAG" build/apinos-amd64.iso \
+            --repo "$GITHUB_REPOSITORY" \
+            --title "ApinOS ${RELEASE_TAG#v}" \
+            --notes "ApinOS ${RELEASE_TAG#v} initial release. Based on Debian 13 Trixie (amd64) with XFCE desktop."
 
       - name: Upload build diagnostics
         if: always()
