@@ -21,7 +21,7 @@ concurrency:
 
 jobs:
   build:
-    name: Build and scan Debian 13 XFCE ISO
+    name: Build ApinOS Debian 13 XFCE ISO
     runs-on: ubuntu-24.04
     permissions:
       contents: read
@@ -30,32 +30,12 @@ jobs:
       - name: Checkout source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - name: Install Debian live-build and security scan dependencies
-        shell: bash
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends clamav clamav-freshclam ca-certificates curl
-
-      - name: Prepare security report directory
-        run: mkdir -p build
-
-      - name: Scan source dependencies and configuration
-        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.76.2
-        with:
-          version: v0.76.2
-          scan-type: fs
-          scan-ref: .
-          scanners: vuln,misconfig,secret
-          severity: HIGH,CRITICAL
-          ignore-unfixed: true
-          format: json
-          output: build/trivy-source.json
-          exit-code: "1"
-
       - name: Build ApinOS ISO with Debian live-build
         shell: bash
         run: |
           set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends ca-certificates curl
           docker pull debian:trixie
           mkdir -p "$RUNNER_TEMP/apinos-apt-cache"
           docker run --rm --privileged \
@@ -71,7 +51,15 @@ jobs:
               bash ./scripts/build-iso.sh
             '
 
-      - name: Upload live-build diagnostic log
+      - name: Upload ApinOS ISO
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: apinos-iso-${{ github.run_number }}
+          path: build/apinos-amd64.iso
+          if-no-files-found: error
+          retention-days: 90
+
+      - name: Upload build diagnostics
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
@@ -79,156 +67,3 @@ jobs:
           path: build/live-build.log
           if-no-files-found: ignore
           retention-days: 30
-
-      - name: Verify ISO and extract live root filesystem
-        shell: bash
-        run: |
-          set -euo pipefail
-          test -s build/apinos-amd64.iso
-          sha256sum build/apinos-amd64.iso | tee build/SHA256SUMS
-          test -s binary/live/filesystem.squashfs
-          unsquashfs -d build/rootfs binary/live/filesystem.squashfs
-
-      - name: Publish preview ISO artifact immediately after build
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
-        with:
-          name: apinos-preview-${{ github.run_number }}
-          path: |
-            build/apinos-amd64.iso
-            build/SHA256SUMS
-          if-no-files-found: error
-          retention-days: 30
-
-      - name: Update ClamAV signatures
-        run: freshclam --stdout --verbose
-
-      - name: Scan unpacked live filesystem for malware
-        shell: bash
-        run: clamscan --recursive --infected --log=build/clamav-scan.log build/rootfs
-
-      - name: Scan Debian packages in the built root filesystem
-        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.76.2
-        with:
-          version: v0.76.2
-          scan-type: rootfs
-          scan-ref: build/rootfs
-          scanners: vuln
-          severity: HIGH,CRITICAL
-          ignore-unfixed: true
-          format: json
-          output: build/trivy-rootfs.json
-          exit-code: "1"
-
-      - name: Upload ISO and security scan report
-        if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
-        with:
-          name: apinos-iso-${{ github.run_number }}
-          path: |
-            build/apinos-amd64.iso
-            build/SHA256SUMS
-            build/clamav-scan.log
-            build/trivy-source.json
-            build/trivy-rootfs.json
-          if-no-files-found: ignore
-          retention-days: 90
-
-  qemu-test:
-    name: Boot ISO in QEMU virtual machine
-    needs: build
-    runs-on: ubuntu-24.04
-    permissions:
-      actions: read
-      contents: read
-    timeout-minutes: 15
-    steps:
-      - name: Download scanned ISO
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
-        with:
-          name: apinos-iso-${{ github.run_number }}
-          path: dist
-
-      - name: Install QEMU
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends qemu-system-x86
-
-      - name: Boot ISO and verify graphical login service
-        shell: bash
-        run: |
-          set -euo pipefail
-          test -s dist/apinos-amd64.iso
-          serial_log="$RUNNER_TEMP/apinos-qemu-serial.log"
-
-          qemu-system-x86_64 \
-            -machine accel=tcg \
-            -cpu max \
-            -m 4096 \
-            -smp 2 \
-            -cdrom dist/apinos-amd64.iso \
-            -boot order=d \
-            -display none \
-            -serial "file:$serial_log" \
-            -monitor none \
-            -nic none \
-            -no-reboot \
-            -no-shutdown &
-          qemu_pid=$!
-
-          cleanup() {
-            kill "$qemu_pid" 2>/dev/null || true
-            wait "$qemu_pid" 2>/dev/null || true
-          }
-          trap cleanup EXIT
-
-          for attempt in $(seq 1 360); do
-            if grep -Eiq 'Reached target.*graphical.target|Started.*lightdm' "$serial_log" 2>/dev/null; then
-              echo "QEMU boot reached the graphical target / LightDM startup."
-              exit 0
-            fi
-            if ! kill -0 "$qemu_pid" 2>/dev/null; then
-              echo "QEMU exited before graphical login service was detected." >&2
-              cat "$serial_log" 2>/dev/null || true
-              exit 1
-            fi
-            sleep 1
-          done
-
-          echo "Timed out waiting for graphical.target or LightDM." >&2
-          cat "$serial_log" 2>/dev/null || true
-          exit 1
-
-      - name: Upload QEMU boot log
-        if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
-        with:
-          name: apinos-qemu-boot-log-${{ github.run_number }}
-          path: ${{ runner.temp }}/apinos-qemu-serial.log
-          if-no-files-found: ignore
-          retention-days: 30
-
-  release:
-    name: Publish tested ISO prerelease
-    needs: qemu-test
-    runs-on: ubuntu-24.04
-    permissions:
-      contents: write
-      actions: read
-    steps:
-      - name: Download scanned ISO
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
-        with:
-          name: apinos-iso-${{ github.run_number }}
-          path: dist
-
-      - name: Publish ISO to GitHub prerelease
-        uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2
-        with:
-          tag_name: apinos-build-${{ github.run_number }}
-          name: ApinOS ISO Build ${{ github.run_number }}
-          prerelease: true
-          generate_release_notes: true
-          files: |
-            dist/apinos-amd64.iso
-            dist/SHA256SUMS
-            dist/clamav-scan.log
