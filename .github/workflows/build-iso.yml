@@ -70,18 +70,18 @@ jobs:
           if-no-files-found: error
           retention-days: 90
 
-      - name: Publish GitHub Release
-        if: github.event_name == 'workflow_dispatch' && inputs.publish_release
+      - name: Publish or update GitHub Release
+        if: (github.event_name == 'workflow_dispatch' && inputs.publish_release) || github.event_name == 'push'
         env:
           GH_TOKEN: ${{ github.token }}
-          RELEASE_TAG: ${{ inputs.release_tag }}
+          RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.release_tag || 'v1.0.0' }}
         shell: bash
         run: |
           set -euo pipefail
-          gh release create "$RELEASE_TAG" build/apinos-amd64.iso \
+          gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY"
+          gh release upload "$RELEASE_TAG" build/apinos-amd64.iso \
             --repo "$GITHUB_REPOSITORY" \
-            --title "ApinOS ${RELEASE_TAG#v}" \
-            --notes "ApinOS ${RELEASE_TAG#v} initial release. Based on Debian 13 Trixie (amd64) with XFCE desktop."
+            --clobber
 
       - name: Upload build diagnostics
         if: always()
